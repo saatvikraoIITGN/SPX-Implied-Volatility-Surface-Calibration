@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "volsurface"
+version = "0.1.0"
+description = "Arbitrage-free implied volatility surface from real SPX options data"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Saatvik Rao" }]
+license = { text = "MIT" }
+
+# Dependency bounds are chosen to also work on Python 3.8 (system interpreter here);
+# Python 3.11+ is recommended. The lower bounds are the versions these APIs settled on.
+dependencies = [
+    "numpy>=1.22",
+    "scipy>=1.8",
+    "pandas>=1.5",
+    "pyarrow>=10.0",
+    "matplotlib>=3.5",
+    "pyyaml>=6.0",
+    "yfinance>=0.2.40",
+    # yfinance pulls in `multitasking`, whose >=0.0.12 releases use `type[...]` subscripting
+    # that only parses on Python 3.9+. Pin it back so the live fetch also imports on 3.8.
+    "multitasking<0.0.12; python_version < '3.9'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+volsurface = "volsurface.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+volsurface = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+src = ["src", "tests"]
+extend-exclude = ["notebooks", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501"]  # line length handled by formatter

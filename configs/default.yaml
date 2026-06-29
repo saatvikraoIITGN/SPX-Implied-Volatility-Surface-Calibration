@@ -1,0 +1,48 @@
+# Default configuration for the SPX implied-volatility-surface pipeline.
+# All tunables live here so pipeline logic never hard-codes magic numbers.
+
+underlying:
+  ticker: "^SPX"          # SPX index options are European & cash-settled -> Black-Scholes is valid
+  fallback_tickers: ["^SPXW", "SPY"]  # documented fallbacks if ^SPX chain is unavailable
+
+rates:
+  # Annualized continuously-compounded risk-free rate used only as a prior/fallback.
+  # The pipeline prefers the market-implied discount factor backed out from put-call parity.
+  risk_free: 0.04
+
+cleaning:
+  # NOTE: yfinance reports openInterest=0 for almost all ^SPX options, so an OI gate here
+  # would discard ~99% of strikes. For this source the effective liquidity filter is
+  # positive-bid + a relative-spread cap; OI is left disabled (0). Bump it if you wire in
+  # a source with reliable OI.
+  min_open_interest: 0      # drop strikes with OI below this (0 = disabled)
+  min_volume: 0             # drop strikes with volume below this (0 = no volume filter)
+  require_positive_bid: true
+  drop_crossed: true        # drop quotes where ask < bid
+  moneyness_min: 0.7        # keep 0.7 < K/S < 1.3
+  moneyness_max: 1.3
+  max_rel_spread: 0.35      # drop quotes where (ask-bid)/mid exceeds this
+  min_strikes_per_expiry: 6 # drop an expiry slice with fewer surviving strikes
+
+expiries:
+  min_days_to_expiry: 7     # skip near-dated/0DTE noise
+  max_days_to_expiry: 365   # cap the far end
+
+iv_solver:
+  vol_lower: 1.0e-4
+  vol_upper: 5.0
+  price_tol: 1.0e-8
+
+svi:
+  # Bounds for raw-SVI parameters {a, b, rho, m, sigma}.
+  rho_abs_max: 0.999
+  sigma_min: 1.0e-4
+  b_min: 0.0
+  n_multistart: 8           # multi-start initializations for robust calibration
+
+paths:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  output_dir: "outputs"
+
+day_count: 365.25           # calendar days per year for time-to-expiry
